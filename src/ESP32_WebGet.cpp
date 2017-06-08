@@ -229,9 +229,9 @@ String ESP32_WebGet::EWG_https_Web_Get(const char* host1, String target_ip, char
           Serial.println(F("-------Client Stop"));
           break;
         }
-				yield();
+        yield();
       }
-	  	yield();
+      yield();
     }
   }
   ret_str += "\0";
