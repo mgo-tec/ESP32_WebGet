@@ -51,7 +51,6 @@ static int _timeZone = 9;     // Tokyo
 static WiFiUDP _Udp;
 static unsigned int _localPort = 8888;  // local port to listen for UDP packets
 
-
 ESP32_WebGet::ESP32_WebGet(){}
 
 //********AP(Router) Connection****
@@ -66,8 +65,8 @@ void ESP32_WebGet::EWG_AP_Connect(const char *ssid, const char *password){
   WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED) {
-      delay(500);
-      Serial.print(".");
+    delay(500);
+    Serial.print(".");
   }
 
   Serial.println();
@@ -85,7 +84,7 @@ void ESP32_WebGet::EWG_NTP_init(int timezone, const char *NtpServerName){
   Serial.print(NtpServerName);
   Serial.print(": ");
   Serial.println(_NtpServerIP);
-  
+
   _Udp.begin(_localPort);
   delay(1000);
 }
@@ -153,9 +152,9 @@ String ESP32_WebGet::EWG_Web_Get(const char* host0, String target_ip, char char_
           Serial.println(F("--------------------Client Stop"));
           break;
         }
-				yield();
+        yield();
       }
-			yield();
+      yield();
     }
   }
   ret_str += "\0";
@@ -178,7 +177,7 @@ String ESP32_WebGet::EWG_https_Web_Get(const char* host1, String target_ip, char
   String ret_str = "";
 
   WiFiClientSecure Sec_client2;
- 
+
   if (Sec_client2.connect(host1, 443)) {
     Serial.print(host1); Serial.print(F("-------------"));
     Serial.println(F("connected"));
@@ -246,7 +245,7 @@ String ESP32_WebGet::EWG_https_Web_Get(const char* host1, String target_ip, char
     delay(10);
     Serial.println(F("-------Client Stop"));
   }
-  
+
   return ret_str;
 }
 
@@ -260,10 +259,10 @@ void ESP32_WebGet::WeatherJ_font_num(String str, uint8_t wDay, uint8_t Htime, ui
   uint8_t red = 0, green = 0, blue = 0;
 
   col[1][0] = 7; col[1][1] = 7; col[1][2] = 3;
-  
+
   uint8_t fnt_num = 0;
   bool Single = true;
-  
+
   if((str.indexOf("時々") >= 0) || (str.indexOf("一時") >= 0)){
     Single = false;
     Fnum[1] = 27;
@@ -273,7 +272,7 @@ void ESP32_WebGet::WeatherJ_font_num(String str, uint8_t wDay, uint8_t Htime, ui
   }else if(str.indexOf("時々") < 0 && str.indexOf("後") < 0){
     Single = true;
   }
-  
+
   if(str.indexOf("晴") == 1){
     if((wDay == 0) && (Htime >= 15)){ //wDay = 0 今日、wDay = 1 明日
       red =  Thunder_red; green = Thunder_green; blue = Thunder_blue;
@@ -298,7 +297,7 @@ void ESP32_WebGet::WeatherJ_font_num(String str, uint8_t wDay, uint8_t Htime, ui
     red =  Rain_red; green = Rain_green; blue = Rain_blue;
     fnt_num = 23;
   }
-  
+
   if(Single == true){
     Fnum[0] = 0;
     Fnum[1] = fnt_num;
@@ -308,7 +307,7 @@ void ESP32_WebGet::WeatherJ_font_num(String str, uint8_t wDay, uint8_t Htime, ui
     Fnum[0] = fnt_num;
     col[0][0] = red; col[0][1] = green; col[0][2] = blue;
   }
-  
+
   if(Single == false){
     if(str.indexOf("晴") > 1){
       red =  Sunny_red; green = Sunny_green; blue = Sunny_blue;
