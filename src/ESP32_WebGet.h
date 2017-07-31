@@ -1,6 +1,6 @@
 /*
   ESP32_WebGet.h
-  Beta version 1.0
+  Beta version 1.1
 
 Copyright (c) 2017 Mgo-tec
 
@@ -44,13 +44,17 @@ Licensed under the MIT.
 #ifndef _ESP32_WEBGET_H_INCLUDED
 #define _ESP32_WEBGET_H_INCLUDED
 
-//#include <Arduino.h>
+#include <Arduino.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <WiFiUdp.h>
+#include "TimeLib.h" //Arduino time library ver1.5
 
 time_t EWG_Get_Ntp_Time();
 void EWG_Send_NTP_Packet(IPAddress &address);
+
+extern const char *_ssid;
+extern const char *_password;
 
 class ESP32_WebGet
 {
@@ -59,12 +63,19 @@ public:
 
   void EWG_AP_Connect(const char *ssid, const char *password);
   void EWG_NTP_init(int timezone, const char *NtpServerName);
+  void EWG_NTP_TimeLib_init(int timezone, const char *NtpServerName);
 
   String EWG_Web_Get(const char* host0, String target_ip, char char_tag, String Final_tag, String Begin_tag, String End_tag, String Paragraph);
   String EWG_https_Web_Get(const char* host1, String target_ip, char char_tag, String Final_tag, String Begin_tag, String End_tag, String Paragraph);
+  String EWG_https_Web_Get(const char *root_ca, const char* host1, String target_ip, char char_tag, String Final_tag, String Begin_tag, String End_tag, String Paragraph);
+  String https_get(const char *Root_Ca, uint8_t rca_set, const char* Host, String t_ip, char c_tag, String F_tag, String B_tag, String E_tag, String Pph);
+
   void WeatherJ_font_num(String str, uint8_t wDay, uint8_t Htime, uint8_t Fnum[3], uint8_t col[3][3]);
+  void NTP_OtherServerSelect(uint8_t timezone);
+  void NTP_Get_Interval(uint32_t interval);
 
 private:
+  uint32_t _LastNTPtime = 0;
 
 };
 

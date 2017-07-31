@@ -1,6 +1,6 @@
 /*
   ESP32_WebGet.cpp
-  Beta version 1.0
+  Beta version 1.1
 
 Copyright (c) 2017 Mgo-tec
 
@@ -77,7 +77,7 @@ void ESP32_WebGet::EWG_AP_Connect(const char *ssid, const char *password){
   Serial.println(WiFi.localIP());
   delay(10);
 }
-//********AP(Router) Connection****
+//******** NTP server init *******
 void ESP32_WebGet::EWG_NTP_init(int timezone, const char *NtpServerName){
   _timeZone = timezone;
   WiFi.hostByName(NtpServerName, _NtpServerIP);
@@ -87,6 +87,15 @@ void ESP32_WebGet::EWG_NTP_init(int timezone, const char *NtpServerName){
 
   _Udp.begin(_localPort);
   delay(1000);
+}
+//********NTP init set TimeLibrary******
+void ESP32_WebGet::EWG_NTP_TimeLib_init(int timezone, const char *NtpServerName){
+  ESP32_WebGet::EWG_NTP_init(timezone, NtpServerName);
+  
+  setTime(EWG_Get_Ntp_Time());
+  
+  ESP32_WebGet::NTP_OtherServerSelect(timezone);
+  
 }
 //*************** HTTP GET **********************************************
 String ESP32_WebGet::EWG_Web_Get(const char* host0, String target_ip, char char_tag, String Final_tag, String Begin_tag, String End_tag, String Paragraph){
@@ -171,82 +180,108 @@ String ESP32_WebGet::EWG_Web_Get(const char* host0, String target_ip, char char_
 
   return ret_str;
 }
+
 //***************** SSL https GET *************************************************
 String ESP32_WebGet::EWG_https_Web_Get(const char* host1, String target_ip, char char_tag, String Final_tag, String Begin_tag, String End_tag, String Paragraph){
+  String str = ESP32_WebGet::https_get("\0", 0, host1, target_ip, char_tag, Final_tag, Begin_tag, End_tag, Paragraph);
+  return str;
+}
 
-  String ret_str = "";
+String ESP32_WebGet::EWG_https_Web_Get(const char *root_ca, const char* host1, String target_ip, char char_tag, String Final_tag, String Begin_tag, String End_tag, String Paragraph){
+  String str = ESP32_WebGet::https_get(root_ca, 1, host1, target_ip, char_tag, Final_tag, Begin_tag, End_tag, Paragraph);
+  return str;
+}
 
-  WiFiClientSecure Sec_client2;
+String ESP32_WebGet::https_get(const char *Root_Ca, uint8_t rca_set, const char* Host, String t_ip, char c_tag, String F_tag, String B_tag, String E_tag, String Pph){
+  String ret_str1;
 
-  if (Sec_client2.connect(host1, 443)) {
-    Serial.print(host1); Serial.print(F("-------------"));
-    Serial.println(F("connected"));
-    Serial.println(F("-------WEB HTTP GET Request"));
-    
-    String str1 = String("GET ") + target_ip + " HTTP/1.1\r\n";
-           str1 += "Host: " + String( host1 ) + "\r\n";
-           str1 += "User-Agent: BuildFailureDetectorESP32\r\n";
-           str1 += "Connection: close\r\n\r\n\0"; //closeを使うと、サーバーの応答後に切断される。最後に空行必要
+  WiFiClientSecure client;
 
-    Sec_client2.print( str1 );
-
-    Serial.println( str1 );
-  }else {
-    // if you didn't get a connection to the server2:
-    Serial.println("connection failed");
+  if(rca_set ==1){
+    client.setCACert(Root_Ca);
+    Serial.println(F("-------Root CA SET"));
+  }else{
+    Serial.println(F("------- Nothing Root CA"));
   }
 
-  if(Sec_client2){
+  if (client.connect(Host, 443)){
+    Serial.print(Host); Serial.print(F("-------------"));
+    Serial.println(F("connected"));
+    Serial.println(F("-------WEB HTTPS GET Request"));
+    
+    String str1 = String("GET https://") + String( Host ) + t_ip + " HTTP/1.1\r\n";
+           str1 += "Host: " + String( Host ) + "\r\n";
+           str1 += "User-Agent: BuildFailureDetectorESP32\r\n";
+           str1 += "Connection: close\r\n\r\n"; //closeを使うと、サーバーの応答後に切断される。最後に空行必要
+           str1 += "\0";
+
+    client.print(str1); //client.println にしないこと。最後に改行コードをプラスして送ってしまう為
+    client.flush(); //client出力が終わるまで待つ
+    Serial.print(str1);
+    Serial.flush(); //シリアル出力が終わるまで待つ
+
+  }else{
+    Serial.println(F("connection failed"));
+  }
+
+  if(client){
     String dummy_str;
     uint16_t from, to;
-    Serial.println(F("-------WEB HTTP Response"));
+    Serial.println(F("-------WEB HTTPS Response"));
 
     uint32_t Https_Time_Out = millis();
 
-    while(Sec_client2.connected()){
+    while(client.connected()){
       if((millis() - Https_Time_Out) > 60000L) break; //60seconds Time Out
-      while (Sec_client2.available()) {
+      while (client.available()) {
         if((millis() - Https_Time_Out) > 60000L) break; //60seconds Time Out
-        if(dummy_str.indexOf(Final_tag) == -1){
-          dummy_str = Sec_client2.readStringUntil(char_tag);
-          if(dummy_str.indexOf(Begin_tag) != -1){
-            from = dummy_str.indexOf(Begin_tag) + Begin_tag.length();
-            to = dummy_str.indexOf(End_tag);
-            ret_str += Paragraph;
-            ret_str += dummy_str.substring(from,to);
-            ret_str += "  ";
+        if(dummy_str.indexOf(F_tag) == -1){
+          dummy_str = client.readStringUntil(c_tag);
+          if(dummy_str.indexOf(B_tag) >= 0){
+            from = dummy_str.indexOf(B_tag) + B_tag.length();
+            to = dummy_str.indexOf(E_tag);
+            ret_str1 += Pph;
+            ret_str1 += dummy_str.substring(from,to);
+            ret_str1 += "  ";
           }
         }else{
-          while(Sec_client2.available()){
+          while(client.available()){
             if((millis() - Https_Time_Out) > 60000L) break; //60seconds Time Out
-            Sec_client2.read();
-            yield();
+            client.read();
+            //delay(1);
           }
-          Sec_client2.flush();
+
           delay(10);
-          Sec_client2.stop();
+          client.stop();
           delay(10);
           Serial.println(F("-------Client Stop"));
+
           break;
         }
-        yield();
+        //delay(1);
       }
-      yield();
+      //delay(1);
     }
   }
-  ret_str += "\0";
-  ret_str.replace("&amp;","＆"); //XMLソースの場合、半角&が正しく表示されないので、全角に置き換える
-  ret_str.replace("&#039;","\'"); //XMLソースの場合、半角アポストロフィーが正しく表示されないので置き換える
+  ret_str1 += "\0";
+  ret_str1.replace("&amp;","＆"); //XMLソースの場合、半角&が正しく表示されないので、全角に置き換える
+  ret_str1.replace("&#039;","\'"); //XMLソースの場合、半角アポストロフィーが正しく表示されないので置き換える
+  ret_str1.replace("&#39;","\'"); //XMLソースの場合、半角アポストロフィーが正しく表示されないので置き換える
+  ret_str1.replace("&apos;","\'"); //XMLソースの場合、半角アポストロフィーが正しく表示されないので置き換える
+  ret_str1.replace("&quot;","\""); //XMLソースの場合、ダブルクォーテーションが正しく表示されないので置き換える
 
-  if(Sec_client2){
-    Sec_client2.flush();
+  if(ret_str1.length() < 20) ret_str1 = "※WEB GETできませんでした";
+
+  if(client){
     delay(10);
-    Sec_client2.stop();
+    client.stop();
     delay(10);
     Serial.println(F("-------Client Stop"));
   }
 
-  return ret_str;
+  Serial.flush(); //シリアル出力が終わるまで待つ
+
+  return ret_str1;
 }
 
 //***************** Weather MyFont Number get *************************************************
@@ -369,4 +404,34 @@ void EWG_Send_NTP_Packet(IPAddress &address){
   _Udp.beginPacket(address, 123); //NTP requests are to port 123
   _Udp.write(_packetBuffer, _NTP_PACKET_SIZE);
   _Udp.endPacket();
+}
+//************ NTP server 取得出来ない場合、別サーバーを選ぶ **********
+void ESP32_WebGet::NTP_OtherServerSelect(uint8_t timezone){
+  if(year() < 2017){
+    Serial.println("------ NTP time GET Try again");
+    const char *ntpServerName[6] = {
+      "time.nist.gov",
+      "time-a.nist.gov",
+      "time-b.nist.gov",
+      "time-nw.nist.gov",
+      "time-a.timefreq.bldrdoc.gov",
+      "time.windows.com"
+    };
+    for( int i=0; i<6; i++ ){
+      if(year() >= 2017) return;
+      ESP32_WebGet::EWG_NTP_init(timezone, ntpServerName[i]);
+      setTime(EWG_Get_Ntp_Time());
+      delay(2000);
+    }
+    if(year() < 2017){
+      Serial.println("------ ALL NTP Server Disconnection");
+    }
+  }
+}
+//************ NTP server 定期取得 **********
+void ESP32_WebGet::NTP_Get_Interval(uint32_t interval){
+  if((millis() - _LastNTPtime) > interval){
+    setTime(EWG_Get_Ntp_Time());
+    _LastNTPtime = millis();
+  }
 }
