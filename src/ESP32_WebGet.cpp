@@ -1,6 +1,6 @@
 /*
   ESP32_WebGet.cpp
-  Beta version 1.1
+  Beta version 1.12
 
 Copyright (c) 2017 Mgo-tec
 
@@ -408,7 +408,7 @@ void EWG_Send_NTP_Packet(IPAddress &address){
 //************ NTP server 取得出来ない場合、別サーバーを選ぶ **********
 void ESP32_WebGet::NTP_OtherServerSelect(uint8_t timezone){
   if(year() < 2017){
-    Serial.println("------ NTP time GET Try again");
+    Serial.println(F("------ NTP time GET Try again"));
     const char *ntpServerName[6] = {
       "time.nist.gov",
       "time-a.nist.gov",
@@ -424,14 +424,19 @@ void ESP32_WebGet::NTP_OtherServerSelect(uint8_t timezone){
       delay(2000);
     }
     if(year() < 2017){
-      Serial.println("------ ALL NTP Server Disconnection");
+      Serial.println(F("------ ALL NTP Server Disconnection"));
     }
   }
 }
 //************ NTP server 定期取得 **********
 void ESP32_WebGet::NTP_Get_Interval(uint32_t interval){
   if((millis() - _LastNTPtime) > interval){
-    setTime(EWG_Get_Ntp_Time());
+    time_t t = EWG_Get_Ntp_Time();
+    if( t > 1000){
+      setTime(t);
+    }else{
+      Serial.println(F("------Cannot get NTP server time"));
+    }
     _LastNTPtime = millis();
   }
 }
