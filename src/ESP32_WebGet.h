@@ -1,6 +1,6 @@
 /*
   ESP32_WebGet.h
-  Beta version 1.1
+  Beta version 1.12
 
 Copyright (c) 2017 Mgo-tec
 
