@@ -1,6 +1,6 @@
 /*
   ESP32_WebGet.cpp
-  Beta version 1.12
+  Beta version 1.13
 
 Copyright (c) 2017 Mgo-tec
 
@@ -55,8 +55,8 @@ ESP32_WebGet::ESP32_WebGet(){}
 
 //********AP(Router) Connection****
 void ESP32_WebGet::EWG_AP_Connect(const char *ssid, const char *password){
-  Serial.begin(115200);
-  delay(10);
+  //Serial.begin(115200); //※二重使用厳禁！　WiFi STA 接続できなくなる。
+  //delay(10);
 
   Serial.println();
   Serial.print(F("Connecting to "));
