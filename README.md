@@ -1,11 +1,20 @@
-# ESP32_WebGet BETA 1.13
+# ESP32_WebGet BETA 1.14
 This library is for the Arduino core for the ESP32.  
 https://github.com/espressif/arduino-esp32  
 This Library that gets Web information from ESP32.  
   
-My Blog: https://www.mgo-tec.com  
+別途Timeライブラリが必要です。  
+以下のリンクよりダウンロードして、Arduino IDE にインストールしてください。  
+Download and use the following library.  
+- Time Library URL:  
+https://github.com/PaulStoffregen/Time  
+  
   
 # Change log
+(1.14)  
+Fix https_get function.  
+Perhaps, I think that the reconnection failure problem will be solved somewhat.  
+  
 (1.13)  
 Erase Serial.begin (115200) of EWG_AP_Connect function.  
 The reason why the WiFi STA can not be connected is double use of Serial.begin.  
@@ -21,6 +30,10 @@ When the time can not be acquired from the NTP server, we added the function to 
 - NTP_Get_Interval  
   
 【更新履歴】(Japanese)  
+(1.14)  
+https_get関数を修正。  
+これで再接続失敗問題が多少解消されると思う。  
+  
 (1.13)  
 EWG_AP_Connect関数のSerial.begin(115200) を消去。  
 WiFi STA が接続できなくなる原因は、Serial.begin の二重使用でした。  
