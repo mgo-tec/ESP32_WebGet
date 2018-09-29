@@ -1,6 +1,6 @@
 /*
   ESP32_WebGet.h
-  Beta version 1.13
+  Beta version 1.14
 
 Copyright (c) 2017 Mgo-tec
 
@@ -24,6 +24,10 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 Reference LGPL-2.1 license statement --> https://opensource.org/licenses/LGPL-2.1   
 
+Download and use the following library.
+Time Library URL:
+https://github.com/PaulStoffregen/Time
+
 WiFi.h - Included WiFi library for esp32
 Based on WiFi.h from Arduino WiFi shield library.
 Copyright (c) 2011-2014 Arduino.  All right reserved.
@@ -45,10 +49,11 @@ Licensed under the MIT.
 #define _ESP32_WEBGET_H_INCLUDED
 
 #include <Arduino.h>
+//#include <esp32-hal-log.h> //log_v出力用
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <WiFiUdp.h>
-#include "TimeLib.h" //Arduino time library ver1.5
+#include <TimeLib.h> //Arduino time library ver1.5
 
 time_t EWG_Get_Ntp_Time();
 void EWG_Send_NTP_Packet(IPAddress &address);
