@@ -1,4 +1,4 @@
-# ESP32_WebGet BETA 1.14
+# ESP32_WebGet BETA 1.15
 This library is for the Arduino core for the ESP32.  
 https://github.com/espressif/arduino-esp32  
 This Library that gets Web information from ESP32.  
@@ -10,26 +10,12 @@ Download and use the following library.
 https://github.com/PaulStoffregen/Time  
   
   
-# Change log
-(1.14)  
-Fix https_get function.  
-Perhaps, I think that the reconnection failure problem will be solved somewhat.  
-  
-(1.13)  
-Erase Serial.begin (115200) of EWG_AP_Connect function.  
-The reason why the WiFi STA can not be connected is double use of Serial.begin.  
-  
-(1.12)  
-When the time can not be acquired with the NTP_Get_Interval function, the internal clock is not set.  
-  
-(1.1)  
-With the EWG_https_Web_Get function, we made it possible to set the root certificate and modified a little to make it easier to get the articles on Yahoo RSS site.  
-When the time can not be acquired from the NTP server, we added the function to be retrieved from other server and the following function for automatic periodical acquisition of time from NTP server.  
-  
-- NTP_OtherServerSelect  
-- NTP_Get_Interval  
-  
 【更新履歴】(Japanese)  
+(1.15)  
+Yahoo Japan RSS天気予報の配信が2022/03/31で終了したため、その関連関数を削除し、気象庁から天気予報データを取得する関数を新たに作りました。  
+詳しくは、以下の記事の【追記】項目をご覧ください。  
+[https://www.mgo-tec.com/blog-entry-esp32-oled-ssd1331-yahoo-news-weather-watch-gadget.html](https://www.mgo-tec.com/blog-entry-esp32-oled-ssd1331-yahoo-news-weather-watch-gadget.html)  
+  
 (1.14)  
 https_get関数を修正。  
 これで再接続失敗問題が多少解消されると思う。  

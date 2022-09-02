@@ -1,6 +1,6 @@
 /*
   ESP32_WebGet.cpp
-  Beta version 1.14
+  Beta version 1.15
 
 Copyright (c) 2017 Mgo-tec
 
@@ -293,89 +293,6 @@ String ESP32_WebGet::https_get(const char *Root_Ca, uint8_t rca_set, const char*
   return ret_str1;
 }
 
-//***************** Weather MyFont Number get *************************************************
-void ESP32_WebGet::WeatherJ_font_num(String str, uint8_t wDay, uint8_t Htime, uint8_t Fnum[3], uint8_t col[3][3]){
-  uint8_t Sunny_red = 7, Sunny_green = 3, Sunny_blue = 0; //256bit color 晴れ
-  uint8_t Cloudy_red = 3, Cloudy_green = 3, Cloudy_blue = 1; //256bit color 曇り
-  uint8_t Rain_red = 0, Rain_green = 0, Rain_blue = 3; //256bit color 雨、大雨、暴風雨
-  uint8_t Snow_red = 7, Snow_green = 7, Snow_blue = 3; //256bit color 雪
-  uint8_t Thunder_red = 7, Thunder_green = 7, Thunder_blue = 0; //256bit color 雷
-  uint8_t red = 0, green = 0, blue = 0;
-
-  col[1][0] = 7; col[1][1] = 7; col[1][2] = 3;
-
-  uint8_t fnt_num = 0;
-  bool Single = true;
-
-  if((str.indexOf("時々") >= 0) || (str.indexOf("一時") >= 0)){
-    Single = false;
-    Fnum[1] = 27;
-  }else if(str.indexOf("後") >= 0){
-    Single = false;
-    Fnum[1] = 28;
-  }else if(str.indexOf("時々") < 0 && str.indexOf("後") < 0){
-    Single = true;
-  }
-
-  if(str.indexOf("晴") == 1){
-    if((wDay == 0) && (Htime >= 15)){ //wDay = 0 今日、wDay = 1 明日
-      red =  Thunder_red; green = Thunder_green; blue = Thunder_blue;
-      fnt_num = 26;
-    }else{
-      red =  Sunny_red; green = Sunny_green; blue = Sunny_blue;
-      fnt_num = 20;
-    }
-  }else if(str.indexOf("曇") == 1){
-    red =  Cloudy_red; green = Cloudy_green; blue = Cloudy_blue;
-    fnt_num = 21;
-  }else if(str.indexOf("雨") == 1){
-    red =  Rain_red; green = Rain_green; blue = Rain_blue;
-    fnt_num = 22;
-  }else if(str.indexOf("雪") == 1){
-    red =  Snow_red; green = Snow_green; blue = Snow_blue;
-    fnt_num = 24;
-  }else if(str.indexOf("雷") == 1){
-    red =  Thunder_red; green = Thunder_green; blue = Thunder_blue;
-    fnt_num = 25;
-  }else if((str.indexOf("暴風雨") == 1) || (str.indexOf("大雨") == 1)){
-    red =  Rain_red; green = Rain_green; blue = Rain_blue;
-    fnt_num = 23;
-  }
-
-  if(Single == true){
-    Fnum[0] = 0;
-    Fnum[1] = fnt_num;
-    Fnum[2] = 0;
-    col[1][0] = red; col[1][1] = green; col[1][2] = blue;
-  }else{
-    Fnum[0] = fnt_num;
-    col[0][0] = red; col[0][1] = green; col[0][2] = blue;
-  }
-
-  if(Single == false){
-    if(str.indexOf("晴") > 1){
-      red =  Sunny_red; green = Sunny_green; blue = Sunny_blue;
-      Fnum[2] = 20;
-    }else if(str.indexOf("曇") > 1){
-      red =  Cloudy_red; green = Cloudy_green; blue = Cloudy_blue;
-      Fnum[2] = 21;
-    }else if(str.indexOf("雨") > 1){
-      red =  Rain_red; green = Rain_green; blue = Rain_blue;
-      Fnum[2] = 22;
-    }else if(str.indexOf("雪") > 1){
-      red =  Snow_red; green = Snow_green; blue = Snow_blue;
-      Fnum[2] = 24;
-    }else if(str.indexOf("雷") > 1){
-      red =  Thunder_red; green = Thunder_green; blue = Thunder_blue;
-      Fnum[2] = 25;
-    }else if((str.indexOf("暴風雨") > 1) || (str.indexOf("大雨") > 1)){
-      red =  Rain_red; green = Rain_green; blue = Rain_blue;
-      Fnum[2] = 23;
-    }
-    col[2][0] = red; col[2][1] = green; col[2][2] = blue;
-  }
-}
-
 //***************** NTP time GET *************************************************
 time_t EWG_Get_Ntp_Time(){
   while (_Udp.parsePacket() > 0) ; // discard any previously received packets
@@ -448,4 +365,158 @@ void ESP32_WebGet::NTP_Get_Interval(uint32_t interval){
     }
     _LastNTPtime = millis();
   }
+}
+
+//********************気象庁天気予報ゲット*******************************
+String ESP32_WebGet::getJapanWeatherPartJson(
+  const char *Root_Ca,
+  uint8_t rca_set,
+  const char* Host,
+  const uint16_t Port,
+  String target_url,
+  char separation_tag,
+  String search_key,
+  String paragraph)
+{
+
+  int16_t wifi_state = WiFi.status();
+  if( wifi_state != WL_CONNECTED ){
+    return "※WiFi APに接続できません";
+  }
+
+  String ret_str1;
+  WiFiClientSecure client;
+
+  if( rca_set == 1 ){
+    client.setCACert( Root_Ca );
+    Serial.println( F("-------Root CA SET") );
+  }else{
+    client.setInsecure();
+    Serial.println( F("------- No Root CA connection") );
+  }
+
+  uint32_t time_out = millis();
+  while(true){
+    /*インターネットが不意に切断されたときや、長時間接続している時には再接続できなくなる。
+    再接続時、client.connect が true になるまで時間がかかる場合があるので、数回トライする必要がある。*/
+    if ( client.connect( Host, Port ) ){
+      Serial.print( Host ); Serial.print( F("-------------") );
+      Serial.println( F("connected") );
+      Serial.println( F("-------Send HTTPS GET Request") );
+
+      String str1 = String( F("GET ") );
+             str1 += target_url + F(" HTTP/1.1\r\n");
+             str1 += F("Host: ");
+             str1 += String( Host ) + F("\r\n");
+             str1 += F("User-Agent: BuildFailureDetectorESP32\r\n");
+             str1 += F("Accept: text/html,application/xhtml+xml,application/xml\r\n");
+             str1 += F("Connection: keep-alive\r\n\r\n"); //closeを使うと、サーバーの応答後に切断される。最後に空行必要
+             str1 += "\0";
+
+      client.print( str1 ); //client.println にしないこと。最後に改行コードをプラスして送ってしまう為
+      client.flush(); //client出力が終わるまで待つ
+      log_v( "%s", str1.c_str() );
+      //Serial.flush(); //シリアル出力が終わるまで待つ指令は、余分なdelayがかかってしまうので基本的に使わない
+      break;
+    }
+    if( ( millis() - time_out ) > 20000 ){
+      Serial.println( F("time out!") );
+      Serial.println( F("Host connection failed.") );
+      return "※Host に接続できません。";
+    }
+    delay(1);
+  }
+
+  time_out = millis();
+  if( client ){
+    String tmp_str;
+    Serial.println( F("-------Receive HTTPS Response") );
+
+    if( client.connected() ){
+      //search_key = "code\":\"130010\"},\"weatherCodes\":[\""
+      //{"name":"東京地方","code":"130010"},"weatherCodes":["300","201","201"],
+      //from_tag = "{/"name/":"
+      //to_tag = "],"
+      //separation_tag = ']'
+      while(true) {
+        if( ( millis() - time_out ) > 60000 ){
+          Serial.println( F("time out!"));
+          Serial.println( F("Host HTTPS response failed.") );
+          break;
+        }
+
+        tmp_str = client.readStringUntil( separation_tag );
+        //Serial.println(tmp_str);
+        if( tmp_str.indexOf( search_key ) >= 0 ){
+          ret_str1 += paragraph;
+          ret_str1 += tmp_str;
+          ret_str1 += "] ";
+          break;
+        }
+
+        delay(1);
+      }
+
+      while(client.available()){
+        if( ( millis() - time_out ) > 60000 ) break; //60seconds Time Out
+        client.read();
+        delay(1);
+      }
+
+      delay(10);
+      client.stop();
+      delay(10);
+      Serial.println( F("-------Client Stop") );
+
+    }
+  }
+  ret_str1 += "\0";
+
+  if( ret_str1.length() < 20 ) ret_str1 = "※WEB GETできませんでした";
+
+  if( client ){
+    delay(10);
+    client.stop();
+    delay(10);
+    Serial.println( F("-------Client Stop") );
+  }
+
+  return ret_str1;
+}
+
+//************** 気象庁 天気予報取得 *************************
+String ESP32_WebGet::getJpWeatherRCA(
+  const char *Root_Ca,
+  uint8_t rca_set,
+  const char *host,
+  String target_url,
+  String area_code_str)
+{
+      //{"name":"東京地方","code":"130010"},"weatherCodes":["300","201","201"],
+      //separation_tag = ']'
+  String weather_str;
+  char separation_tag = ']';
+  String search_key =  "code\":\"" + area_code_str + "\"},\"weatherCodes\":[\"";
+  String paragraph = "｜";
+
+  weather_str = ESP32_WebGet::getJapanWeatherPartJson(
+    Root_Ca,
+    rca_set,
+    host,
+    443, //port
+    target_url,
+    separation_tag,
+    search_key,
+    paragraph);
+
+  Serial.print(F("Weather forecast = ")); Serial.println(weather_str);
+  if( weather_str.indexOf("※") == 0 ){
+    delay(500); //メッセージウィンドウを正しく表示させるために必要
+    //WeatherStatus = ConnectFailed;
+    //weather_msg_status = ConnectFailed;
+  }else{
+    //WeatherStatus = ConnectOK;
+    //weather_msg_status = ConnectOK;
+  }
+  return weather_str;
 }

@@ -1,6 +1,6 @@
 /*
   ESP32_WebGet.h
-  Beta version 1.14
+  Beta version 1.15
 
 Copyright (c) 2017 Mgo-tec
 
@@ -75,9 +75,25 @@ public:
   String EWG_https_Web_Get(const char *root_ca, const char* host1, String target_ip, char char_tag, String Final_tag, String Begin_tag, String End_tag, String Paragraph);
   String https_get(const char *Root_Ca, uint8_t rca_set, const char* Host, String t_ip, char c_tag, String F_tag, String B_tag, String E_tag, String Pph);
 
-  void WeatherJ_font_num(String str, uint8_t wDay, uint8_t Htime, uint8_t Fnum[3], uint8_t col[3][3]);
   void NTP_OtherServerSelect(uint8_t timezone);
   void NTP_Get_Interval(uint32_t interval);
+
+  String getJpWeatherRCA(
+    const char *Root_Ca,
+    uint8_t rca_set,
+    const char *host,
+    String target_url,
+    String area_code_str);
+  
+  String getJapanWeatherPartJson(
+    const char *Root_Ca,
+    uint8_t rca_set,
+    const char* Host,
+    const uint16_t Port,
+    String target_url,
+    char separation_tag,
+    String search_key,
+    String paragraph);
 
 private:
   uint32_t _LastNTPtime = 0;
